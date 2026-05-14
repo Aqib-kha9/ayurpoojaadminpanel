@@ -1,7 +1,13 @@
 import axios from 'axios';
 
+const getBaseURL = () => {
+  const url = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  // If the URL already contains /api/v1, use it as is; otherwise, append it.
+  return url.includes('/api/v1') ? url : `${url.replace(/\/$/, '')}/api/v1`;
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1',
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },
