@@ -12,13 +12,13 @@ import {
 import { Button } from "@/components/ui/button"
 import { UploadCloud, Download, FileSpreadsheet, Loader2, CheckCircle, AlertCircle } from "lucide-react"
 
-interface ImportProductsModalProps {
+interface ImportBundlesModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
 }
 
-export function ImportProductsModal({ isOpen, onClose, onSuccess }: ImportProductsModalProps) {
+export function ImportBundlesModal({ isOpen, onClose, onSuccess }: ImportBundlesModalProps) {
   const { t } = useTranslation()
   const [file, setFile] = React.useState<File | null>(null)
   const [isUploading, setIsUploading] = React.useState(false)
@@ -36,9 +36,9 @@ export function ImportProductsModal({ isOpen, onClose, onSuccess }: ImportProduc
     try {
       setIsDownloadingTemplate(true)
       
-      // Define the headers based on our supported fields
       const headers = [
-        "Category ID", "Type", "SKU", "Name (EN)", "Name (HI)", "Name (TE)",
+        "Category ID", "Bundle SKU", "Name (EN)", "Name (HI)", "Name (TE)",
+        "Bundle Items (SKU:Qty, ...)",
         "Brand (EN)", "Brand (HI)", "Brand (TE)", "Description (EN)", "Description (HI)", "Description (TE)",
         "Price", "MRP", "Stock", "Unit", "Status",
         "Badge (EN)", "Badge (HI)", "Badge (TE)",
@@ -65,45 +65,51 @@ export function ImportProductsModal({ isOpen, onClose, onSuccess }: ImportProduc
       ]
 
       // Fetch actual categories to include as a reference sheet
-      const response = await api.get('/categories?limit=1000')
-      const categories = response.data.data?.categories || []
+      const categoriesResponse = await api.get('/categories?limit=1000')
+      const categories = categoriesResponse.data.data?.categories || []
       const firstCategory = categories.length > 0 ? categories[0] : null
       const exampleCatId = firstCategory ? firstCategory.id : "your-category-id-here"
 
+      // Fetch actual products to include as a reference sheet
+      const productsResponse = await api.get('/products?limit=5000&type=STANDARD')
+      const products = productsResponse.data.data?.products || []
+      const firstProduct = products.length > 0 ? products[0] : null
+      const exampleSku = firstProduct ? firstProduct.sku : "SKU-EX-001"
+
       const instructions = [
         "INSTRUCTIONS (Do not edit this row)", 
-        "Required. Options: 'STANDARD', 'BUNDLE', 'VARIANT'. Default: STANDARD. STANDARD is for regular products, BUNDLE is for grouped items, VARIANT is for variations of a main product. Determines how the item is treated in the system.",
-        "Required. Unique stock keeping unit. Used to track inventory. Must be completely unique across all products.",
-        "Required. Product name in English. This is the primary title displayed to users.",
-        "Optional. Hindi name for localizing the product title.",
-        "Optional. Telugu name for localizing the product title.",
+        "Required. Unique stock keeping unit for the bundle. Used to track inventory. Must be completely unique across all products.",
+        "Required. Bundle name in English. This is the primary title displayed to users.",
+        "Optional. Hindi name for localizing the bundle title.",
+        "Optional. Telugu name for localizing the bundle title.",
+        "Required. Comma separated list of child SKUs with quantities (e.g. SKU1:2, SKU2:1). These are the individual products that make up this bundle.",
         "Optional. Brand name in English. Helps users filter by brand.",
         "Optional. Hindi brand.",
         "Optional. Telugu brand.",
-        "Optional. Full description in English. Shown on the product details page. Can include formatting.",
+        "Optional. Full description in English. Shown on the bundle details page.",
         "Optional. Hindi description.",
         "Optional. Telugu description.",
-        "Required. Selling price (e.g. 99). This is the final price the customer pays.",
-        "Optional. Original price (MRP) (e.g. 120). Used to calculate and display the discount percentage.",
-        "Optional. Current inventory count. If 0, the product will show as out of stock.",
-        "Required. Selling unit. Options: 'pc', 'kg', 'g', 'L', 'ml', 'box', 'packet'. Indicates how the product is measured.",
+        "Required. Selling price (e.g. 199). This is the final price the customer pays for the whole bundle.",
+        "Optional. Original price (MRP) (e.g. 250). Used to calculate and display the discount percentage.",
+        "Optional. Current inventory count for the bundle as a whole.",
+        "Required. Selling unit. Options: 'pc', 'kg', 'g', 'L', 'ml', 'box', 'packet'. Indicates how the bundle is measured.",
         "Optional. Options: 'DRAFT', 'ACTIVE', 'INACTIVE', 'OUT_OF_STOCK'. Default: ACTIVE. Determines visibility on the storefront.",
-        "Optional. Promotional badge (e.g. 'New', 'Bestseller'). Shown as a tag on the product card.",
+        "Optional. Promotional badge (e.g. 'New', 'Best Value'). Shown as a tag on the bundle card.",
         "Optional. Hindi badge.",
         "Optional. Telugu badge.",
-        "Optional. Comma separated tags (e.g. 'snack, spicy'). Used for search and categorization.",
+        "Optional. Comma separated tags (e.g. 'gift, festive'). Used for search and categorization.",
         "Optional. Comma separated tags in Hindi.",
         "Optional. Comma separated tags in Telugu.",
         "Optional. Default 4.5. Initial or overridden rating out of 5.",
         "Optional. Number of reviews. Used for display purposes.",
-        "Optional. 'true' or 'false'. Indicates if the customer can return this item after purchase.",
-        "Optional. 'true' or 'false'. Indicates if Cash on Delivery is allowed for this item.",
+        "Optional. 'true' or 'false'. Indicates if the customer can return this bundle after purchase.",
+        "Optional. 'true' or 'false'. Indicates if Cash on Delivery is allowed for this bundle.",
         "Optional. 'true' or 'false'. Indicates if the order can be canceled before shipping.",
         "Optional. Value of discount. Used in conjunction with Discount Type.",
         "Optional. Options: 'Percentage' or 'Flat'. How the discount is applied.",
         "Optional. Tax value (e.g. 18 for 18%).",
         "Optional. Options: 'inclusive' or 'exclusive'. Whether the selling price already includes this tax.",
-        "Optional. Shipping cost. Flat rate shipping fee for this item.",
+        "Optional. Shipping cost. Flat rate shipping fee for this bundle.",
         "Optional. Shipping weight in kg. Used to calculate dynamic shipping rates.",
         "Optional. Length in cm. Used for volumetric weight calculations.",
         "Optional. Width in cm. Used for volumetric weight calculations.",
@@ -115,7 +121,7 @@ export function ImportProductsModal({ isOpen, onClose, onSuccess }: ImportProduc
         "Optional. Country of origin (e.g. 'India'). Required for many e-commerce platforms.",
         "Optional. Country of origin in Hindi.",
         "Optional. Country of origin in Telugu.",
-        "Optional. FSSAI License No. Required for food items.",
+        "Optional. FSSAI License No. Required for food items in the bundle.",
         "Optional. SEO Title. Overrides the default page title for better search engine ranking.",
         "Optional. SEO Title in Hindi.",
         "Optional. SEO Title in Telugu.",
@@ -131,11 +137,11 @@ export function ImportProductsModal({ isOpen, onClose, onSuccess }: ImportProduc
         "Optional. -1 for unlimited. Max length of snippet in search results.",
         "Optional. -1 for unlimited. Max length of video preview.",
         "Optional. e.g. 'large'. Max size of image preview.",
-        "Optional. Options: 'veg', 'non-veg', 'vegan', 'egg'. Shows the dietary icon for food items.",
-        "Optional. e.g. '6 months'. Shelf life of the product.",
+        "Optional. Options: 'veg', 'non-veg', 'vegan', 'egg'. Shows the dietary icon for the bundle.",
+        "Optional. e.g. '6 months'. Shelf life of the products in the bundle.",
         "Optional. Shelf life in Hindi.",
         "Optional. Shelf life in Telugu.",
-        "Optional. Comma separated. List of ingredients.",
+        "Optional. Comma separated. List of ingredients across the bundle.",
         "Optional. Ingredients in Hindi.",
         "Optional. Ingredients in Telugu.",
         "Optional. Allergy info (e.g. 'Contains Nuts'). Warnings for customers.",
@@ -143,29 +149,29 @@ export function ImportProductsModal({ isOpen, onClose, onSuccess }: ImportProduc
         "Optional. Allergy info in Telugu.",
         "Optional. Tax classification code (HSN). Used for GST/Tax reporting.",
         "Optional. Product barcode (UPC/EAN). Used for scanning and inventory.",
-        "Optional. e.g. 'Box', 'Bottle', 'Pouch'. Type of packaging.",
+        "Optional. e.g. 'Box', 'Basket', 'Hamper'. Type of packaging.",
         "Optional. Pack type in Hindi.",
         "Optional. Pack type in Telugu.",
-        "Optional. Number of items inside the pack (e.g. 6 for a 6-pack).",
-        "Optional. Comma separated direct image URLs (e.g. 'https://link1.jpg,https://link2.jpg'). Images will be downloaded and saved."
+        "Optional. Number of items inside the pack.",
+        "Optional. Comma separated direct image URLs. Images will be downloaded and saved."
       ]
 
-      // Provide one example row to help the user
       const sampleData = [
-        exampleCatId, "STANDARD", "SKU-EX-001", "Example Product", "उदाहरण उत्पाद", "ఉదాహరణ ఉత్పత్తి",
-        "Example Brand", "", "", "This is a great product.", "", "",
-        "99", "120", "50", "pc", "ACTIVE",
+        exampleCatId, "BNDL-EX-001", "Example Bundle", "उदाहरण बंडल", "ఉదాహరణ బండిల్",
+        `${exampleSku}:2, ANOTHER-SKU:1`,
+        "Example Brand", "", "", "This is a great bundle.", "", "",
+        "199", "250", "50", "pc", "ACTIVE",
         "New", "", "",
-        "snack, tasty", "", "",
-        "4.5", "10", "true", "true", "true",
+        "bundle, offer", "", "",
+        "4.8", "15", "true", "true", "true",
         "10", "Percentage", "5", "inclusive",
-        "0", "0.5", "10", "10", "5",
-        "10",
+        "0", "1.5", "20", "20", "15",
+        "5",
         "Example Mfg", "", "",
         "India", "", "",
         "FSSAI123456789",
-        "Buy Example Product Online", "", "",
-        "Get the best deals on Example Product.", "", "",
+        "Buy Example Bundle Online", "", "",
+        "Get the best deals on Example Bundle.", "", "",
         "true", "false", "false", "false", "false", "false",
         "-1", "-1", "large",
         "veg",
@@ -173,9 +179,9 @@ export function ImportProductsModal({ isOpen, onClose, onSuccess }: ImportProduc
         "Flour, Sugar", "", "",
         "None", "", "",
         "1234", "890123456789",
-        "Packet", "", "",
+        "Box", "", "",
         "1",
-        "https://example.com/image1.jpg,https://example.com/image2.jpg"
+        "https://example.com/bundle1.jpg,https://example.com/bundle2.jpg"
       ]
 
       const workbook = xlsx.utils.book_new()
@@ -184,7 +190,7 @@ export function ImportProductsModal({ isOpen, onClose, onSuccess }: ImportProduc
       const worksheet = xlsx.utils.aoa_to_sheet([headers, instructions, sampleData])
       const colWidths = headers.map(h => ({ wch: Math.max(h.length, 15) }))
       worksheet['!cols'] = colWidths
-      xlsx.utils.book_append_sheet(workbook, worksheet, "Products")
+      xlsx.utils.book_append_sheet(workbook, worksheet, "Bundles")
 
       // 2. Categories Reference Sheet
       const categoryHeaders = ["Category ID (Copy this)", "Category Name (EN)", "Category Slug"]
@@ -201,7 +207,22 @@ export function ImportProductsModal({ isOpen, onClose, onSuccess }: ImportProduc
       catWorksheet['!cols'] = [{ wch: 40 }, { wch: 30 }, { wch: 30 }]
       xlsx.utils.book_append_sheet(workbook, catWorksheet, "Categories Reference")
 
-      xlsx.writeFile(workbook, "Products_Import_Template.xlsx")
+      // 3. Products Reference Sheet
+      const productHeaders = ["Product SKU (Copy this)", "Product Name (EN)", "Stock"]
+      const productRows = products.map((prod: any) => {
+        let pName = ""
+        if (typeof prod.name === 'string') {
+          try { pName = JSON.parse(prod.name).en || prod.name } catch { pName = prod.name }
+        } else if (typeof prod.name === 'object' && prod.name !== null) {
+          pName = prod.name.en || ""
+        }
+        return [prod.sku, pName, prod.stock]
+      })
+      const prodWorksheet = xlsx.utils.aoa_to_sheet([productHeaders, ...productRows])
+      prodWorksheet['!cols'] = [{ wch: 30 }, { wch: 50 }, { wch: 15 }]
+      xlsx.utils.book_append_sheet(workbook, prodWorksheet, "Products Reference")
+
+      xlsx.writeFile(workbook, "Bundles_Import_Template.xlsx")
     } catch (error) {
       console.error("Failed to generate template", error)
     } finally {
@@ -226,7 +247,7 @@ export function ImportProductsModal({ isOpen, onClose, onSuccess }: ImportProduc
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await api.post('/products/bulk-import', formData, {
+      const response = await api.post('/products/bulk-import-bundles', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
 
@@ -234,20 +255,20 @@ export function ImportProductsModal({ isOpen, onClose, onSuccess }: ImportProduc
       if (data.failureCount > 0) {
         setUploadResult({ 
           status: 'error', 
-          message: `Processed ${data.totalProcessed} products. ${data.successCount} succeeded, ${data.failureCount} failed.`,
+          message: `Processed ${data.totalProcessed} bundles. ${data.successCount} succeeded, ${data.failureCount} failed.`,
           details: data.errors
         })
       } else {
         setUploadResult({ 
           status: 'success', 
-          message: `Successfully imported ${data.successCount} products!` 
+          message: `Successfully imported ${data.successCount} bundles!` 
         })
         onSuccess()
       }
     } catch (error: any) {
       setUploadResult({ 
         status: 'error', 
-        message: error.response?.data?.message || error.message || "Failed to import products."
+        message: error.response?.data?.message || error.message || "Failed to import bundles."
       })
     } finally {
       setIsUploading(false)
@@ -266,10 +287,10 @@ export function ImportProductsModal({ isOpen, onClose, onSuccess }: ImportProduc
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
             <FileSpreadsheet className="w-6 h-6 text-primary" />
-            {t("products.bulk_import", "Bulk Import Products")}
+            {t("products.bulk_import_bundles", "Bulk Import Package Bundles")}
           </DialogTitle>
           <DialogDescription>
-            Download the template, fill in your product details, and upload the Excel file to import thousands of products at once.
+            Download the bundle template, fill in bundle details and include product SKUs, and upload the Excel file.
           </DialogDescription>
         </DialogHeader>
 
@@ -279,7 +300,7 @@ export function ImportProductsModal({ isOpen, onClose, onSuccess }: ImportProduc
             <div>
               <h4 className="font-bold text-sm mb-1">1. Download Template</h4>
               <p className="text-xs text-muted-foreground">
-                Get the required Excel layout. Do not change the column headers.
+                Get the required Excel layout for bundles. Do not change the column headers.
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate} disabled={isDownloadingTemplate} className="gap-2 shrink-0">

@@ -58,6 +58,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { ImportProductsModal } from "@/components/products/ImportProductsModal"
+import { ImportBundlesModal } from "@/components/products/ImportBundlesModal"
 
 export default function ProductsPage() {
   const navigate = useNavigate()
@@ -71,6 +72,7 @@ export default function ProductsPage() {
   // Modal states
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
   const [isImportOpen, setIsImportOpen] = React.useState(false)
+  const [isImportBundlesOpen, setIsImportBundlesOpen] = React.useState(false)
   const [selectedProduct, setSelectedProduct] = React.useState<any>(null)
 
   const fetchProducts = React.useCallback(async () => {
@@ -136,6 +138,13 @@ export default function ProductsPage() {
             className="w-full md:w-auto gap-2"
           >
             <FileSpreadsheet className="h-4 w-4" /> {t("products.import", "Import")}
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => setIsImportBundlesOpen(true)}
+            className="w-full md:w-auto gap-2"
+          >
+            <FileSpreadsheet className="h-4 w-4" /> {t("products.import_bundles", "Import Bundles")}
           </Button>
           <Button 
             onClick={() => navigate("/products/add")}
@@ -407,6 +416,15 @@ export default function ProductsPage() {
           setIsImportOpen(false)
           fetchProducts()
         }} 
+      />
+
+      <ImportBundlesModal
+        isOpen={isImportBundlesOpen}
+        onClose={() => setIsImportBundlesOpen(false)}
+        onSuccess={() => {
+          setIsImportBundlesOpen(false)
+          fetchProducts()
+        }}
       />
     </div>
   )
