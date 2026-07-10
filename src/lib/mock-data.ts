@@ -160,6 +160,7 @@ export const MENU_ITEMS = [
   { icon: CreditCard, label: "Orders", href: "/orders" },
   { icon: Tag, label: "Coupons", href: "/coupons" },
   { icon: Layers, label: "Categories", href: "/categories" },
+  { icon: ImageIcon, label: "Image Gallery", href: "/gallery" },
   { icon: ImageIcon, label: "Banners", href: "/banners" },
   { icon: Smartphone, label: "Home Offers", href: "/home-offers" },
   { icon: LayoutDashboard, label: "Brands", href: "/brands" },

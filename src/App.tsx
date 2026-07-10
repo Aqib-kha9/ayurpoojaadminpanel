@@ -23,6 +23,7 @@ import Banners from "./pages/Banners"
 import HomeOffers from "./pages/HomeOffers"
 import Brands from "./pages/Brands"
 import Categories from "./pages/Categories"
+import GalleryPage from "./pages/GalleryPage"
 import SubAdmins from "./pages/SubAdmins"
 import UserDetails from "./pages/UserDetails"
 import ProductDetails from "./pages/ProductDetails"
@@ -54,6 +55,7 @@ function App() {
                 <Route path="/packages" element={<Navigate to="/products" replace />} />
                 <Route path="/coupons" element={<Coupons />} />
                 <Route path="/categories" element={<Categories />} />
+                <Route path="/gallery" element={<GalleryPage />} />
                 <Route path="/team" element={<SubAdmins />} />
                 <Route path="/banners" element={<Banners />} />
                 <Route path="/home-offers" element={<HomeOffers />} />
